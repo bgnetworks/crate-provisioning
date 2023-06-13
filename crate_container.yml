@@ -1,0 +1,6 @@
+- name: CRATE Configuration
+  hosts: crate-container
+  connection: docker
+  tasks:
+    - name: test python
+      raw: python3 --version

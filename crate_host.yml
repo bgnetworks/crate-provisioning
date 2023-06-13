@@ -1,0 +1,75 @@
+- name: CRATE Host Configuration
+  hosts: localhost
+  connection: local
+  roles:
+    - role: artis3n.tailscale
+      tags: [tailscale]
+      vars:
+        # TODO should this be an env var?
+        tailscale_authkey: "{{ lookup('env', 'TAILSCALE_KEY') }}"
+    - role: lenovo-power
+      tags: [lenovo]
+  tasks:
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      become: true
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu jammy stable
+        state: present
+      become: true
+
+    - name: Update apt and install openssh-server
+      apt:
+        name: openssh-server
+        update_cache: true
+      become: true
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+      become: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Create docker group
+      group: 
+        name: "docker"
+        state: present
+      become: true
+
+    - name: Add user to docker group
+      user:
+        name: "eric"
+        groups: "docker"
+        append: true
+      become: true
+
+    - name: Create Container
+      docker_container:
+        name: crate-container-1
+        image: ubuntu:22.04
+        command: sleep 1d
+      become: true
+  
+    - name: Install NoMachine
+      apt:
+        # TODO make version variable
+        deb: https://download.nomachine.com/download/8.5/Linux/nomachine_8.5.3_1_amd64.deb
+      become: true
+
+    # TODO set up public key auth for NX/SSH
+
+- name: Setup Python within container
+  hosts: crate-container-1
+  connection: docker
+  gather_facts: false
+  tasks:
+    - name: Install python on docker
+      raw: apt -y update && apt install -y python3

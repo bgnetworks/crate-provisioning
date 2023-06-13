@@ -1,0 +1,33 @@
+---
+# Disable lid power modes 
+# https://forums.linuxmint.com/viewtopic.php?t=359164
+- name: UPower Ignore Lid
+  become: true
+  lineinfile:
+    path: /etc/UPower/UPower.conf
+    regexp: IgnoreLid=
+    line: IgnoreLid=true
+
+# Fix no reboot with lid closed
+# https://askubuntu.com/questions/1208889/ubuntu-19-10-laptop-wont-reboot-shutdown-if-the-lid-is-closed-ssh
+- name: Systemd Ignore Lid
+  become: true
+  lineinfile:
+    path: /etc/systemd/logind.conf
+    regexp: HandleLidSwitch=
+    line: HandleLidSwitch=ignore
+- name: Systemd Ignore Lid on External Power
+  become: true
+  lineinfile:
+    path: /etc/systemd/logind.conf
+    regexp: HandleLidSwitchExternalPower=
+    line: HandleLidSwitchExternalPower=ignore
+
+# Fully disable screensaver to prevent lag w/ lid closed
+# https://unix.stackexchange.com/questions/651932/how-to-completely-disable-screensaver-turning-off-screen-on-ubuntu-mate-20-04
+- name: Disable Screensaver
+  blockinfile:
+    path: /home/{{ ansible_user_id }}/.bashrc
+    block: |
+      # disable screensaver completely
+      xset -dpms s off s noblank s 0 0 s noexpose
